@@ -1,0 +1,98 @@
+Domain AdquisicionTransformacionEntrenamientoImagenes {
+    //Originalmente se pensó en tener dos dominios. Sin embargo, el entrenamiento de modelos y extracción de features depende completamente de la extracción y procesamiento de los datos. 
+  domainVisionStatement = " Adquisición, procesamiento, transformación y disposición de imágenes médicas y metadatos listos para ser usadas en modelos de aprendizaje y extracción de features."
+
+  Subdomain ProcesamientoImagenes {
+    type = CORE_DOMAIN
+    domainVisionStatement = "Ejecuta pipelines para extraer información relevante en función del tipo de examen, parte del cuerpo y patologías específicas."
+  }
+
+  Subdomain IngestionImagenesMetadatos {
+    type = CORE_DOMAIN
+    domainVisionStatement = "Permite la importación de imágenes médicas y metadatos desde diversas fuentes (Google Drive, Dropbox, data centers on-premise de centros de salud). Garantiza que los datos sean transferidos de manera eficiente y almacenados en la nube privada de STA."
+  }
+
+  Subdomain AnonimizacionLimpieza {
+    type = CORE_DOMAIN
+    domainVisionStatement = "Aplica técnicas de anonimización sobre imágenes DICOM y metadatos, eliminando información sensible para cumplir con normativas como HIPAA y GDPR."
+  }
+
+  Subdomain EntrenamientoExtraccionFeatures {
+    type = CORE_DOMAIN
+    domainVisionStatement = "Utiliza modelos de IA para extraer características estructuradas de imágenes médicas anonimizadas."
+  }
+
+  Subdomain DisposicionImagenesMetadatos {
+    type = CORE_DOMAIN
+    domainVisionStatement = "Permite la consulta y descarga de imágenes y metadatos anonimizados mediante una interfaz de búsqueda avanzada con filtros por modalidad, etiquetas DICOM y proveedores. Los datos procesados pueden ser exportados en JSON o DICOM según la necesidad del usuario."
+  }
+
+  Subdomain AtencionCliente {
+    type = SUPPORTING_DOMAIN
+    domainVisionStatement = "Facilita la administración de cuentas para desarrolladores, laboratorios y empresas de IA. Proporciona planes de acceso (Standard, Pro, Enterprise)."
+  }
+
+  Subdomain Facturacion{
+    type= GENERIC_SUBDOMAIN
+    domainVisionStatement = "Administra los planes de suscripción y pagos según el nivel de acceso solicitado."
+  }
+
+  Subdomain SeguridadPorPais {
+    type CORE_DOMAIN
+    domainVisionStatement = "Valida y verifica la normatividad del país de donde provienen los datos. Es aquí donde se asegura de la anonimización de los datos según las reglas de cada país, así como sus especificaciones en cuanto a dónde y cómo guardar la información."
+  }
+
+}
+
+
+
+BoundedContext ContextoIngestion implements IngestionImagenesMetadatos {
+  domainVisionStatement = "Gestiona la adquisicioón e importación de imágenes médicas y sus metadatos de las diversas fuentes (Google Drive, Dropbox, data centers de centros de salud)"
+}
+
+BoundedContext ContextoProcesamientoImagenes implements ProcesamientoImagenes {
+  domainVisionStatement = "Realiza la transformación y anonimización, eliminando la información sensible de manera automatizada, conforme a normativas como HIPAA y GDPR"
+}
+
+BoundedContext ContextoSeguridadPais implements AnonimizacionLimpieza, SeguridadPorPais {
+  domainVisionStatement = "Garantiza el cumplimiento de la normativa y seguridad de los datos según las regulaciones de cada país, asegurando que el almacenamiento y procesamiento se realicen dentro del territorio de cada uno"
+}
+
+BoundedContext ContextoEntrenamientoExtraccion implements EntrenamientoExtraccionFeatures {
+  domainVisionStatement = "Desarrolla y entrena con modelos IA la extracción de características médicas de imágenes anonimizadas"
+}
+
+BoundedContext ContextoDisposicion implements DisposicionImagenesMetadatos{
+ domainVisionStatement = "Presenta la consulta y entrega de imágenes médicas y sus metadatos a través de plataforma (UI)"
+}
+
+BoundedContext ContextoAtencionCliente implements Facturacion, AtencionCliente{
+ domainVisionStatement = "Administra la gestión de suscripciones, acceso de imágenes y pagos según el nivel"
+}
+
+ContextMap SaludTechAlpesToBe {
+	state = TO_BE
+
+	contains ContextoAtencionCliente
+  contains ContextoDisposicion
+  contains ContextoEntrenamientoExtraccion
+  contains ContextoIngestion
+  contains ContextoProcesamientoImagenes
+  contains ContextoSeguridadPais
+	
+
+	ContextoIngestion [U, OHS] -> [D] ContextoSeguridadPais
+  ContextoSeguridadPais [U, OHS] -> [D] ContextoProcesamientoImagenes
+  ContextoEntrenamientoExtraccion [D] <- [U, OHS] ContextoProcesamientoImagenes
+  ContextoProcesamientoImagenes [U, OHS] -> [D] ContextoDisposicion
+  ContextoDisposicion [U, OHS] -> [D, ACL] ContextoAtencionCliente
+  ContextoEntrenamientoExtraccion [U, OHS] -> [D, ACL] ContextoAtencionCliente
+  ContextoEntrenamientoExtraccion [U, OHS] -> [D] ContextoDisposicion
+
+
+
+} 
+
+
+
+
